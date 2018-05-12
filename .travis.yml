@@ -1,0 +1,37 @@
+language: cpp
+
+matrix:
+  include:
+    - os: linux
+      sudo: required
+      dist: trusty
+      compiler: gcc
+      services:
+        - docker
+    - os: osx
+      compiler: clang
+      osx_image: xcode7.3
+
+script:
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then chmod +x src/leveldb/build_detect_platform ; fi
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then rm -Rf src/secp256k1/ ; fi
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then git clone https://github.com/bitcoin-core/secp256k1 --depth 1 -b master src/secp256k1/ ; fi
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then chmod +x src/secp256k1/autogen.sh ; fi
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then PATH="$(brew --prefix qt)/bin:$PATH" qmake CONFIG+=release Ferrumcoin.pro ; fi
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then make -j2 > /dev/null ; fi
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then PATH="$(brew --prefix qt)/bin:$PATH" macdeployqt ferrumcoin-Qt.app -always-overwrite -dmg ; fi
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then curl --upload-file ./ferrumcoin-Qt.dmg https://transfer.sh/ferrumcoin-Qt.dmg ; fi
+  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then docker build . ; fi
+
+before_install:
+  - eval "${MATRIX_EVAL}"
+  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then docker pull ubuntu:16.04 ; fi
+
+install:
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew update > /dev/null ; fi
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install qt5 ; fi
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew link qt5 --force ; fi
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install boost@1.57 ; fi
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install qrencode ; fi
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install miniupnpc ; fi
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install berkeley-db ; fi
